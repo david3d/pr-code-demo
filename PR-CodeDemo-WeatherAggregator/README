@@ -50,18 +50,6 @@ perldoc command.
 
     perldoc PR::CodeDemo::WeatherAggregator
 
-You can also look for information at:
-
-    RT, CPAN's request tracker (report bugs here)
-        https://rt.cpan.org/NoAuth/Bugs.html?Dist=PR-CodeDemo-WeatherAggregator
-
-    CPAN Ratings
-        https://cpanratings.perl.org/d/PR-CodeDemo-WeatherAggregator
-
-    Search CPAN
-        https://metacpan.org/release/PR-CodeDemo-WeatherAggregator
-
-
 LICENSE AND COPYRIGHT
 
 This software is Copyright (c) 2024 by David Dierauer.
