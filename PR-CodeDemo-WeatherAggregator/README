@@ -1,0 +1,72 @@
+PR-CodeDemo-WeatherAggregator
+
+Technology Audition – Weather Aggregator
+
+The Problem
+
+Context:
+
+It is the summer of 2009. You have just used a weather website to plan a week off work to enjoy the sunshine. However, when the time comes, it rains all week! Frustrated and trapped in your holiday let with your overbearing family members, you inspect the weather site using a particular set of skills you learned at Stanford University. You see that the data the site uses is stale and drawn from untrustworthy sources.
+
+Your Big Idea:
+
+What if there was an application that took in weather data from up to date, trustworthy sources covering the whole globe? You decide to create the world's first truly accurate weather information service. This is going to be your big start-up idea. You're going to be rich, or at least internet-famous. You have your laptop, $100 (for cloud hosting, and for GoDaddy to register a domain) and a free weekend. "That's all an entrepreneur needs these days," you think.
+
+The Problem:
+
+Almost as soon as you start, you see the problem. There are many different sources of weather data from all across the planet. These sources are available via various file types, formats and technologies, so your solution should consume data in at least two different formats.
+
+The Solution:
+
+You decide to architect and build a service to handle these different sources of weather data and to extract, transform and load them into a single normalised source.
+
+Notes:
+
+Don't build a weather website. We only need to see the solution for the data processing part of the problem. Weather data is large and complex. For the sake of this audition we are only interested in the following to start with:
+
+* Latitude
+* Longitude
+* UTC Time
+* Temperature
+* Wind Speed
+* Wind Direction
+* Precipitation Chance
+
+Let's go.
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc PR::CodeDemo::WeatherAggregator
+
+You can also look for information at:
+
+    RT, CPAN's request tracker (report bugs here)
+        https://rt.cpan.org/NoAuth/Bugs.html?Dist=PR-CodeDemo-WeatherAggregator
+
+    CPAN Ratings
+        https://cpanratings.perl.org/d/PR-CodeDemo-WeatherAggregator
+
+    Search CPAN
+        https://metacpan.org/release/PR-CodeDemo-WeatherAggregator
+
+
+LICENSE AND COPYRIGHT
+
+This software is Copyright (c) 2024 by David Dierauer.
+
+This is free software, licensed under:
+
+  The Artistic License 2.0 (GPL Compatible)
+
