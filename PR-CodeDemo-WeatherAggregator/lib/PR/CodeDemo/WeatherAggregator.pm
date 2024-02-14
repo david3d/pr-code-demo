@@ -4,6 +4,7 @@ use 5.18.0;
 use strict;
 use warnings;
 
+use Carp;
 use LWP::UserAgent;
 use JSON;
 
@@ -18,13 +19,14 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
+our $API = 'https://api.weather.gov';
 
 
 =head1 SYNOPSIS
 
     use PR::CodeDemo::WeatherAggregator;
 
-    my $wa = PR::CodeDemo::WeatherAggregator->new();
+    my $wagg = PR::CodeDemo::WeatherAggregator->new();
     ...
 
 
@@ -40,54 +42,67 @@ sub new {
     return bless { %args }, $class;
 }
 
+sub _get_ua {
+    my $self = shift;
+    my $ua = LWP::UserAgent->new('weather-agg-audition-pr/0.1', 'dierauer@gmail.com');
+    return $ua;
+}
 
-=head2 get_data
+=head2 get_weather
 
 =cut
 
-sub get_data {
+sub get_weather {
     my $self = shift;
+    my %args = @_; # contains latitude and longitude keys
+    # TODO validate input
 
-    my $base_url = 'https://api.weather.gov';
-    my $endpoint = 'gridpoints/TOP/31,80/forecast';
-    my $req_url = join '/', $base_url, $endpoint;
+    my $url = $self->get_forecast_url_from_coordinates($args{latitude}, $args{longitude});
+    my $data = $self->get_full_forecast($url);
+    my $forecast = $self->normalize_data($args{latitude}, $args{longitude}, $data);
+    return $forecast;
+}
 
-    my $ua = LWP::UserAgent->new('weather-agg-audition-pr/0.1', 'dierauer@gmail.com');
+
+=head2 get_forecast_url_from_coordinates
+
+=cut
+
+sub get_forecast_url_from_coordinates {
+    my $self = shift;
+    my ($latitude, $longitude) = @_;
+    my $coordinates = join ',', $latitude, $longitude;
+
+    my $req_url = join '/', $API, 'points', $coordinates;
+
+    my $ua = $self->_get_ua();
 
     my $response = $ua->get($req_url);
+    if ($response->is_success) {
+        my $content = $response->decoded_content;
+        my $data = decode_json($content);
+        return $data->{properties}{forecast};
+    }
+    else {
+        Carp::croak($response->as_string);
+    }
+}
+
+sub get_full_forecast {
+    my $self = shift;
+    my ($url) = @_;
+
+    my $ua = $self->_get_ua();
+    my $response = $ua->get($url);
 
     if ($response->is_success) {
         return $response->decoded_content;
     }
     else {
-        return $response->as_string;
+        Carp::croak($response->as_string);
     }
 }
 
-sub to_data_structure {
-    my $self = shift;
-    my $text = shift;
-
-    return eval { decode_json($text) };
-}
-
-=head2 parse_data
-
-=cut
-
-sub parse_data {
-    my $self = shift;
-    my ($rawdata) = @_;
-    my $properties = $rawdata->{properties};
-
-    return $properties;
-}
-
-sub get_current_period {
-    my $self = shift;
-    my $parsed = shift;
-    return $parsed->{periods}[0];
-}
 
 =head2 normalize_data
 
@@ -103,20 +118,22 @@ sub get_current_period {
 
 sub normalize_data {
     my $self = shift;
-    my $parsed = shift;
+    my ($latitude, $longitude, $content) = @_;
 
-    my $current_period_hr = $self->get_current_period($parsed);
+    my $data = decode_json($content);
+    my $properties = $data->{properties};
+    my $current_period = $properties->{periods}[0];
 
     my @keys = qw(latitude longitude utc_time temperature wind_speed wind_direction precipitation_chance);
     my %return = map { $_ => undef } @keys;
 
-#     $return{latitude} =
-#     $return{longitude} =
-    $return{utc_time} = $parsed->{updated};
-    $return{temperature} = $current_period_hr->{temperature};
-    $return{wind_speed} = $current_period_hr->{windSpeed};
-    $return{wind_direction} = $current_period_hr->{windDirection};
-    $return{precipitation_chance} = ($current_period_hr->{probabilityOfPrecipitation}{value} || 0) . '%';
+    $return{latitude}             = $latitude;
+    $return{longitude}            = $longitude;
+    $return{utc_time}             = $properties->{updated};
+    $return{temperature}          = $current_period->{temperature};
+    $return{wind_speed}           = $current_period->{windSpeed};
+    $return{wind_direction}       = $current_period->{windDirection};
+    $return{precipitation_chance} = ($current_period->{probabilityOfPrecipitation}{value} || 0) . '%';
 
     return \%return;
 }
@@ -124,13 +141,6 @@ sub normalize_data {
 =head1 AUTHOR
 
 David Dierauer, C<< <dierauer at gmail.com> >>
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc PR::CodeDemo::WeatherAggregator
 
 
 =head1 LICENSE AND COPYRIGHT
@@ -640,3 +650,104 @@ Sample weather data from api.weather.gov for: 'gridpoints/TOP/31,80/forecast'
 }',
                  '_protocol' => 'HTTP/1.1'
                }, 'HTTP::Response' );
+
+
+
+
+
+
+content from https://api.weather.gov/points/46.826,-100.8:
+{
+    "@context": [
+        "https://geojson.org/geojson-ld/geojson-context.jsonld",
+        {
+            "@version": "1.1",
+            "wx": "https://api.weather.gov/ontology#",
+            "s": "https://schema.org/",
+            "geo": "http://www.opengis.net/ont/geosparql#",
+            "unit": "http://codes.wmo.int/common/unit/",
+            "@vocab": "https://api.weather.gov/ontology#",
+            "geometry": {
+                "@id": "s:GeoCoordinates",
+                "@type": "geo:wktLiteral"
+            },
+            "city": "s:addressLocality",
+            "state": "s:addressRegion",
+            "distance": {
+                "@id": "s:Distance",
+                "@type": "s:QuantitativeValue"
+            },
+            "bearing": {
+                "@type": "s:QuantitativeValue"
+            },
+            "value": {
+                "@id": "s:value"
+            },
+            "unitCode": {
+                "@id": "s:unitCode",
+                "@type": "@id"
+            },
+            "forecastOffice": {
+                "@type": "@id"
+            },
+            "forecastGridData": {
+                "@type": "@id"
+            },
+            "publicZone": {
+                "@type": "@id"
+            },
+            "county": {
+                "@type": "@id"
+            }
+        }
+    ],
+    "id": "https://api.weather.gov/points/46.826,-100.8",
+    "type": "Feature",
+    "geometry": {
+        "type": "Point",
+        "coordinates": [
+            -100.8,
+            46.826000000000001
+        ]
+    },
+    "properties": {
+        "@id": "https://api.weather.gov/points/46.826,-100.8",
+        "@type": "wx:Point",
+        "cwa": "BIS",
+        "forecastOffice": "https://api.weather.gov/offices/BIS",
+        "gridId": "BIS",
+        "gridX": 110,
+        "gridY": 48,
+        "forecast": "https://api.weather.gov/gridpoints/BIS/110,48/forecast",
+        "forecastHourly": "https://api.weather.gov/gridpoints/BIS/110,48/forecast/hourly",
+        "forecastGridData": "https://api.weather.gov/gridpoints/BIS/110,48",
+        "observationStations": "https://api.weather.gov/gridpoints/BIS/110,48/stations",
+        "relativeLocation": {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -100.770099,
+                    46.812083999999999
+                ]
+            },
+            "properties": {
+                "city": "Bismarck",
+                "state": "ND",
+                "distance": {
+                    "unitCode": "wmoUnit:m",
+                    "value": 2751.5421549296002
+                },
+                "bearing": {
+                    "unitCode": "wmoUnit:degree_(angle)",
+                    "value": 304
+                }
+            }
+        },
+        "forecastZone": "https://api.weather.gov/zones/forecast/NDZ035",
+        "county": "https://api.weather.gov/zones/county/NDC015",
+        "fireWeatherZone": "https://api.weather.gov/zones/fire/NDZ035",
+        "timeZone": "America/Chicago",
+        "radarStation": "KBIS"
+    }
+}
